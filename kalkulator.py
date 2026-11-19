@@ -1,6 +1,6 @@
 """Kalkulator sederhana untuk latihan CI/CD di GitHub."""
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 
 
 def tambah(a, b):
@@ -16,8 +16,6 @@ def kali(a, b):
 
 
 def bagi(a, b):
-    if b == 0:
-        raise ValueError("Pembagi tidak boleh nol")
     return a / b
 
 
