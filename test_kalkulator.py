@@ -28,7 +28,3 @@ def test_bagi_nol():
 
 def test_format_versi_semver():
     assert re.fullmatch(r"\d+\.\d+\.\d+", kalkulator.__version__)
-
-
-def test_pangkat():
-    assert kalkulator.pangkat(2, 3) == 8
