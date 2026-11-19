@@ -1,0 +1,56 @@
+name: Release (CD)
+
+# CD: jalan otomatis hanya saat ada tag versi, mis. v1.0.0
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write   # dibutuhkan untuk membuat GitHub Release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependency
+        run: pip install -r requirements-dev.txt
+
+      - name: Test sebelum rilis
+        run: pytest -v
+
+      - name: Pastikan versi tag sama dengan __version__
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          FILE_VERSION="$(python -c 'import kalkulator; print(kalkulator.__version__)')"
+          echo "Tag: $TAG_VERSION | File: $FILE_VERSION"
+          if [ "$TAG_VERSION" != "$FILE_VERSION" ]; then
+            echo "::error::Versi tag ($TAG_VERSION) tidak sama dengan __version__ ($FILE_VERSION)"
+            exit 1
+          fi
+
+      - name: Buat paket rilis
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          zip "dist/kalkulator-${VERSION}.zip" kalkulator.py
+
+      - name: Buat GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.zip \
+            --title "Kalkulator $GITHUB_REF_NAME" \
+            --generate-notes
+
+      - name: Peringatan jika rilis gagal
+        if: failure()
+        run: |
+          echo "::error title=RILIS GAGAL::Rilis $GITHUB_REF_NAME dibatalkan. Hapus tag: git push origin --delete $GITHUB_REF_NAME"
+          echo "### RILIS $GITHUB_REF_NAME GAGAL - tidak ada release dibuat" >> "$GITHUB_STEP_SUMMARY"
